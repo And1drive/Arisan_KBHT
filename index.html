@@ -184,7 +184,7 @@ const formatRupiah = (v) => {
 const api = async (path, data = null) => {
   const opts = { method: data ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' } };
   if (data) opts.body = JSON.stringify(data);
-  const res = await fetch(GAS_WEB_APP + path, opts);
+  const res = await fetch(https://script.google.com/macros/s/AKfycby5IoRGaDMKvtkmi1yETRN3KsPWHpaoXY9c5O9VKNTyoBc7sYrKk17WEadQRFIr4Q763Q/exec + path, opts);
   return res.json();
 }
 
