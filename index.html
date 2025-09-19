@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Aplikasi Arisan - Login</title>
   <script>
-    const GAS_WEB_APP = "PASTE_URL_EXEC_DI_SINI"; // contoh: https://script.google.com/macros/s/AKfycb.../exec
+    const GAS_WEB_APP = "https://script.google.com/macros/s/AKfycby8tD8ZZq5UYhcH0GTSwSVnZMvPlc9kWm6BXEd3UJxRbrVUap3NG2zy-PZjjycHNjE1hQ/exec"; // ganti dengan URL /exec dari deployment
 
     async function login() {
       const username = document.getElementById("username").value;
@@ -18,6 +18,8 @@
           body: JSON.stringify({ username, password })
         });
 
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+
         const data = await res.json();
         alert(data.message);
 
@@ -27,7 +29,7 @@
         }
       } catch (err) {
         console.error(err);
-        alert("⚠️ Gagal terhubung ke server");
+        alert("⚠️ Gagal terhubung ke server: " + err.message);
       }
     }
   </script>
@@ -64,8 +66,8 @@
   </div>
 
   <div id="mainApp" class="card" style="display:none;">
-    <h2>Selamat datang di Aplikasi Arisan</h2>
-    <p>Login berhasil ✅</p>
+    <h2>Selamat datang di Aplikasi Arisan 🎉</h2>
+    <p>Login berhasil.</p>
   </div>
 </body>
 </html>
