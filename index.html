@@ -2,72 +2,106 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Aplikasi Arisan - Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Arisan</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(120deg, #4facfe, #00f2fe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.2);
+      width: 350px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #4facfe;
+      border: none;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      margin-top: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #00c6fb;
+    }
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Login Aplikasi Arisan</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <div id="message" class="message"></div>
+  </div>
+
   <script>
-    const GAS_WEB_APP = "https://script.google.com/macros/s/AKfycbz4lIP_3n5LNFYyVRfP2-GKTUcIVCV3jIMIdxlSoHHOXiSSqAXujmf8fSSDh42G3jtz4Q/exec"; // ganti dengan URL /exec dari deployment
+    // 🔗 Ganti dengan URL WebApp Anda
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz4lIP_3n5LNFYyVRfP2-GKTUcIVCV3jIMIdxlSoHHOXiSSqAXujmf8fSSDh42G3jtz4Q/exec";
 
     async function login() {
-      const username = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const messageEl = document.getElementById("message");
+
+      if (!username || !password) {
+        messageEl.textContent = "Isi username dan password!";
+        return;
+      }
 
       try {
-        const res = await fetch(GAS_WEB_APP + "?action=login", {
+        const res = await fetch(`${GAS_WEB_APP_URL}?action=login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password })
         });
 
-        if (!res.ok) throw new Error("HTTP error " + res.status);
+        if (!res.ok) throw new Error("Server error");
 
         const data = await res.json();
-        alert(data.message);
-
         if (data.success) {
-          document.getElementById("loginForm").style.display = "none";
-          document.getElementById("mainApp").style.display = "block";
+          messageEl.style.color = "green";
+          messageEl.textContent = "✅ Login berhasil!";
+          // TODO: redirect ke halaman utama aplikasi
+          setTimeout(() => alert("Masuk ke Menu Utama..."), 1500);
+        } else {
+          messageEl.style.color = "red";
+          messageEl.textContent = "❌ " + data.message;
         }
       } catch (err) {
         console.error(err);
-        alert("⚠️ Gagal terhubung ke server: " + err.message);
+        messageEl.style.color = "red";
+        messageEl.textContent = "⚠️ Gagal terhubung ke server";
       }
     }
   </script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      height: 100vh; margin: 0; background: #f0f4f8;
-    }
-    .card {
-      background: white; padding: 20px; border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 300px; text-align: center;
-    }
-    input {
-      width: 100%; padding: 10px; margin: 5px 0;
-      border: 1px solid #ccc; border-radius: 5px;
-    }
-    button {
-      width: 100%; padding: 10px; margin-top: 10px;
-      background: #4CAF50; border: none; color: white;
-      border-radius: 5px; cursor: pointer;
-    }
-    button:hover { background: #45a049; }
-  </style>
-</head>
-<body>
-  <div id="loginForm" class="card">
-    <h2>Login</h2>
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-  </div>
-
-  <div id="mainApp" class="card" style="display:none;">
-    <h2>Selamat datang di Aplikasi Arisan 🎉</h2>
-    <p>Login berhasil.</p>
-  </div>
 </body>
 </html>
