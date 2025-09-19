@@ -8,25 +8,27 @@
     body {
       font-family: Arial, sans-serif;
       background: linear-gradient(120deg, #4facfe, #00f2fe);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
       margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .container {
-      background: white;
-      padding: 30px;
+      background: #fff;
+      padding: 25px;
       border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
       box-shadow: 0px 4px 20px rgba(0,0,0,0.2);
-      width: 350px;
-      text-align: center;
     }
     h2 {
+      text-align: center;
       margin-bottom: 20px;
       color: #333;
     }
-    input {
+    input, select {
       width: 100%;
       padding: 10px;
       margin: 8px 0;
@@ -47,35 +49,91 @@
     button:hover {
       background: #00c6fb;
     }
+    .hidden { display: none; }
     .message {
-      margin-top: 15px;
+      text-align: center;
+      margin-top: 10px;
       font-size: 14px;
       color: red;
+    }
+    .menu button {
+      margin: 10px 0;
+      width: 100%;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="loginPage">
     <h2>Login Aplikasi Arisan</h2>
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
     <button onclick="login()">Login</button>
-    <div id="message" class="message"></div>
+    <div id="loginMsg" class="message"></div>
+  </div>
+
+  <div class="container hidden" id="menuPage">
+    <h2>Menu Utama</h2>
+    <div class="menu">
+      <button onclick="showPage('inputPage')">Input Data</button>
+      <button onclick="showPage('pengeluaranPage')">Pengeluaran</button>
+      <button onclick="showPage('laporanPage')">Laporan</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container hidden" id="inputPage">
+    <h2>Input Data</h2>
+    <label>Penerima:</label>
+    <input type="text" id="penerima">
+    <label>Bulan:</label>
+    <input type="text" id="bulan" value="">
+    <label>Tahun:</label>
+    <input type="text" id="tahun" value="">
+    <label>Penyetor:</label>
+    <input type="text" id="penyetor">
+    <label>Jumlah Disetor:</label>
+    <input type="number" id="jumlahDisetor">
+    <label>Kas Untuk Penerima:</label>
+    <input type="number" id="kasPenerima">
+    <label>Kas Untuk Panitia:</label>
+    <input type="number" id="kasPanitia">
+    <button onclick="saveInput()">Simpan</button>
+    <button onclick="showPage('menuPage')">Kembali</button>
+    <div id="inputMsg" class="message"></div>
+  </div>
+
+  <div class="container hidden" id="pengeluaranPage">
+    <h2>Pengeluaran</h2>
+    <label>Tanggal:</label>
+    <input type="date" id="tglPengeluaran">
+    <label>Keterangan:</label>
+    <input type="text" id="ketPengeluaran">
+    <label>Nominal:</label>
+    <input type="number" id="nomPengeluaran">
+    <button onclick="savePengeluaran()">Simpan</button>
+    <button onclick="showPage('menuPage')">Kembali</button>
+    <div id="pengeluaranMsg" class="message"></div>
+  </div>
+
+  <div class="container hidden" id="laporanPage">
+    <h2>Laporan</h2>
+    <p>(Belum dibuat, hanya placeholder)</p>
+    <button onclick="showPage('menuPage')">Kembali</button>
   </div>
 
   <script>
     // 🔗 Ganti dengan URL WebApp Anda
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwr5HNurH3zp0UxIJ6uOK4xKI8eWY67Kz_4Nv-c96l6tnKO6bREe3Yxkzr6BZntfGLVMg/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwhQc7fs2RUffqMh38prSVMKB_xWXaqUXKYfxCB8qI9xbmcCMVVWSjPKwlfkd2etOrt1g/exec";
+
+    function showPage(pageId) {
+      document.querySelectorAll(".container").forEach(el => el.classList.add("hidden"));
+      document.getElementById(pageId).classList.remove("hidden");
+    }
 
     async function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
-      const messageEl = document.getElementById("message");
-
-      if (!username || !password) {
-        messageEl.textContent = "Isi username dan password!";
-        return;
-      }
+      const msg = document.getElementById("loginMsg");
 
       try {
         const res = await fetch(`${GAS_WEB_APP_URL}?action=login`, {
@@ -83,25 +141,84 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password })
         });
-
-        if (!res.ok) throw new Error("Server error");
-
         const data = await res.json();
+
         if (data.success) {
-          messageEl.style.color = "green";
-          messageEl.textContent = "✅ Login berhasil!";
-          // TODO: redirect ke halaman utama aplikasi
-          setTimeout(() => alert("Masuk ke Menu Utama..."), 1500);
+          msg.style.color = "green";
+          msg.textContent = "✅ Login berhasil!";
+          setTimeout(() => showPage("menuPage"), 1000);
         } else {
-          messageEl.style.color = "red";
-          messageEl.textContent = "❌ " + data.message;
+          msg.style.color = "red";
+          msg.textContent = "❌ " + data.message;
         }
       } catch (err) {
         console.error(err);
-        messageEl.style.color = "red";
-        messageEl.textContent = "⚠️ Gagal terhubung ke server";
+        msg.textContent = "⚠️ Gagal terhubung ke server";
       }
     }
+
+    function logout() {
+      showPage("loginPage");
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("loginMsg").textContent = "";
+    }
+
+    async function saveInput() {
+      const data = {
+        penerima: document.getElementById("penerima").value,
+        bulan: document.getElementById("bulan").value || new Date().toLocaleString("id-ID", { month: "long" }),
+        tahun: document.getElementById("tahun").value || new Date().getFullYear(),
+        penyetor: document.getElementById("penyetor").value,
+        jumlahDisetor: document.getElementById("jumlahDisetor").value,
+        kasPenerima: document.getElementById("kasPenerima").value,
+        kasPanitia: document.getElementById("kasPanitia").value,
+      };
+
+      const msg = document.getElementById("inputMsg");
+
+      try {
+        const res = await fetch(`${GAS_WEB_APP_URL}?action=saveInput`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        msg.style.color = result.success ? "green" : "red";
+        msg.textContent = result.message;
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "⚠️ Gagal terhubung ke server";
+      }
+    }
+
+    async function savePengeluaran() {
+      const data = {
+        tanggal: document.getElementById("tglPengeluaran").value,
+        keterangan: document.getElementById("ketPengeluaran").value,
+        nominal: document.getElementById("nomPengeluaran").value
+      };
+
+      const msg = document.getElementById("pengeluaranMsg");
+
+      try {
+        const res = await fetch(`${GAS_WEB_APP_URL}?action=savePengeluaran`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        msg.style.color = result.success ? "green" : "red";
+        msg.textContent = result.message;
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "⚠️ Gagal terhubung ke server";
+      }
+    }
+
+    // Auto isi bulan & tahun default
+    document.getElementById("bulan").value = new Date().toLocaleString("id-ID", { month: "long" });
+    document.getElementById("tahun").value = new Date().getFullYear();
   </script>
 </body>
 </html>
