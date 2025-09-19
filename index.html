@@ -1,0 +1,603 @@
+<!--
+Aplikasi Arisan - Single-file frontend (index.html) + Google Apps Script (Code.gs)
+
+INSTRUKSI: Ganti nilai SPREADSHEET_ID dengan ID spreadsheet Anda.
+Ganti GAS_WEB_APP_URL dengan URL hasil deploy Google Apps Script (lihat README di bawah).
+
+Simpan file ini sebagai index.html untuk di-host di GitHub Pages.
+
+-->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aplikasi Arisan</title>
+  <!-- Tailwind CDN (for simplicity) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#0ea5a4">
+</head>
+<body class="bg-gradient-to-br from-sky-50 to-cyan-50 min-h-screen font-sans text-slate-800">
+
+  <!-- Main container -->
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-teal-500 rounded-lg flex items-center justify-center text-white text-2xl font-bold">AA</div>
+        <div>
+          <h1 class="text-2xl font-extrabold">Aplikasi Arisan</h1>
+          <p class="text-sm text-slate-600">Manajemen arisan sederhana — akses lewat browser</p>
+        </div>
+      </div>
+      <div id="userInfo" class="hidden items-center gap-3">
+        <span id="userName" class="text-sm"></span>
+        <button id="btnLogout" class="px-3 py-1 bg-red-500 text-white rounded">Logout</button>
+      </div>
+    </header>
+
+    <main class="bg-white/80 shadow-lg rounded-xl p-6">
+      <!-- Login card -->
+      <div id="loginCard" class="max-w-md mx-auto">
+        <h2 class="text-xl font-semibold mb-4">Login</h2>
+        <div class="space-y-3">
+          <input id="inpUser" placeholder="Username" class="w-full p-3 border rounded" />
+          <input id="inpPass" type="password" placeholder="Password" class="w-full p-3 border rounded" />
+          <div class="flex items-center justify-between">
+            <button id="btnLogin" class="px-4 py-2 bg-teal-500 text-white rounded">Masuk</button>
+            <small class="text-slate-500">Hubungi admin untuk akses</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- App content -->
+      <div id="app" class="hidden">
+        <!-- Main menu -->
+        <div id="mainMenu" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <button class="card p-6 rounded-lg shadow hover:shadow-lg bg-white flex flex-col items-start" data-menu="input">
+            <h3 class="text-lg font-bold">Input Data</h3>
+            <p class="text-sm text-slate-500">Masukkan setoran arisan</p>
+          </button>
+          <button class="card p-6 rounded-lg shadow hover:shadow-lg bg-white flex flex-col items-start" data-menu="pengeluaran">
+            <h3 class="text-lg font-bold">Pengeluaran</h3>
+            <p class="text-sm text-slate-500">Catat pengeluaran panitia</p>
+          </button>
+          <button class="card p-6 rounded-lg shadow hover:shadow-lg bg-white flex flex-col items-start" data-menu="laporan">
+            <h3 class="text-lg font-bold">Laporan</h3>
+            <p class="text-sm text-slate-500">Laporan arisan, kas panitia & pengeluaran</p>
+          </button>
+        </div>
+
+        <!-- Pages -->
+        <section id="pageInput" class="hidden">
+          <div class="flex gap-6">
+            <!-- Left column -->
+            <div class="w-1/3 bg-slate-50 p-4 rounded">
+              <label class="block text-sm mb-1">Penerima</label>
+              <select id="selPenerima" class="w-full p-2 border rounded"></select>
+
+              <label class="block text-sm mt-3 mb-1">Bulan</label>
+              <select id="selBulan" class="w-full p-2 border rounded"></select>
+
+              <label class="block text-sm mt-3 mb-1">Tahun</label>
+              <select id="selTahun" class="w-full p-2 border rounded"></select>
+            </div>
+
+            <!-- Center column -->
+            <div class="flex-1 bg-slate-50 p-4 rounded">
+              <label class="block text-sm mb-1">Penyetor</label>
+              <select id="selPenyetor" class="w-full p-2 border rounded"></select>
+
+              <label class="block text-sm mt-3 mb-1">Jumlah Disetor</label>
+              <input id="inpJumlah" class="w-full p-2 border rounded" inputmode="numeric" />
+
+              <label class="block text-sm mt-3 mb-1">Kas Untuk Penerima</label>
+              <input id="inpKasPenerima" class="w-full p-2 border rounded" inputmode="numeric" />
+
+              <label class="block text-sm mt-3 mb-1">Kas Untuk Panitia</label>
+              <input id="inpKasPanitia" class="w-full p-2 border rounded" inputmode="numeric" />
+
+              <div class="flex gap-3 mt-4">
+                <button id="btnSaveInput" class="px-4 py-2 bg-teal-600 text-white rounded">Simpan</button>
+                <button id="btnBackFromInput" class="px-4 py-2 bg-slate-200 rounded">Kembali</button>
+                <span id="saveMsgInput" class="ml-3 text-teal-600 hidden">✔ Data berhasil disimpan</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="pagePengeluaran" class="hidden">
+          <div class="max-w-2xl">
+            <label class="block text-sm mb-1">Tanggal</label>
+            <input id="inpTanggalPengeluaran" type="date" class="w-full p-2 border rounded" />
+            <label class="block text-sm mt-3 mb-1">Keterangan</label>
+            <input id="inpKeteranganPengeluaran" class="w-full p-2 border rounded" />
+            <label class="block text-sm mt-3 mb-1">Nominal</label>
+            <input id="inpNominalPengeluaran" class="w-full p-2 border rounded" inputmode="numeric" />
+            <div class="flex gap-3 mt-4">
+              <button id="btnSavePengeluaran" class="px-4 py-2 bg-teal-600 text-white rounded">Simpan</button>
+              <button id="btnBackFromPengeluaran" class="px-4 py-2 bg-slate-200 rounded">Kembali</button>
+              <span id="saveMsgPengeluaran" class="ml-3 text-teal-600 hidden">✔ Data berhasil disimpan</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="pageLaporan" class="hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <button class="p-4 bg-white rounded shadow" data-report="arisan">Laporan Arisan</button>
+            <button class="p-4 bg-white rounded shadow" data-report="kas">Laporan Kas Untuk Panitia</button>
+            <button class="p-4 bg-white rounded shadow" data-report="pengeluaran">Laporan Pengeluaran</button>
+          </div>
+
+          <!-- Report area -->
+          <div id="reportArea" class="bg-white p-4 rounded shadow min-h-[200px]"></div>
+          <div class="mt-4">
+            <button id="btnBackFromLaporan" class="px-4 py-2 bg-slate-200 rounded">Kembali</button>
+          </div>
+        </section>
+
+        <!-- Admin panel modal (simple) -->
+        <div id="adminPanel" class="hidden fixed inset-0 bg-black/40 items-center justify-center">
+          <div class="bg-white p-6 rounded shadow max-w-2xl w-full">
+            <h3 class="text-lg font-bold mb-3">Admin - Kelola User</h3>
+            <div class="mb-3">
+              <label class="block text-sm">Username</label>
+              <input id="adm_username" class="w-full p-2 border rounded" />
+              <label class="block text-sm mt-2">Password</label>
+              <input id="adm_password" class="w-full p-2 border rounded" />
+              <div class="flex gap-2 mt-2">
+                <label class="inline-flex items-center"><input id="perm_open" type="checkbox" class="mr-2"/> Open</label>
+                <label class="inline-flex items-center"><input id="perm_insert" type="checkbox" class="mr-2"/> Insert</label>
+                <label class="inline-flex items-center"><input id="perm_update" type="checkbox" class="mr-2"/> Update</label>
+                <label class="inline-flex items-center"><input id="perm_delete" type="checkbox" class="mr-2"/> Delete</label>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <button id="admSave" class="px-3 py-2 bg-teal-600 text-white rounded">Simpan User</button>
+                <button id="admClose" class="px-3 py-2 bg-slate-200 rounded">Tutup</button>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-2">Daftar User</h4>
+              <div id="userList" class="space-y-2 max-h-40 overflow-auto"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <footer class="text-center text-sm text-slate-500 mt-6">&copy; 2025 Aplikasi Arisan</footer>
+  </div>
+
+<script>
+// CONFIG: ganti dengan URL web app Google Apps Script Anda
+const GAS_WEB_APP = 'https://script.google.com/macros/s/AKfycby5IoRGaDMKvtkmi1yETRN3KsPWHpaoXY9c5O9VKNTyoBc7sYrKk17WEadQRFIr4Q763Q/exec'; // <-- ganti
+
+// Utilities
+const formatRupiah = (v) => {
+  const n = Number(String(v).replace(/[^0-9\-]/g,'')) || 0;
+  return new Intl.NumberFormat('id-ID').format(n);
+}
+
+const api = async (path, data = null) => {
+  const opts = { method: data ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' } };
+  if (data) opts.body = JSON.stringify(data);
+  const res = await fetch(GAS_WEB_APP + path, opts);
+  return res.json();
+}
+
+// State
+let currentUser = null;
+let masterNames = [];
+
+// DOM refs
+const loginCard = document.getElementById('loginCard');
+const app = document.getElementById('app');
+const userInfo = document.getElementById('userInfo');
+const userName = document.getElementById('userName');
+const btnLogout = document.getElementById('btnLogout');
+
+// Login
+document.getElementById('btnLogin').addEventListener('click', async () => {
+  const u = document.getElementById('inpUser').value.trim();
+  const p = document.getElementById('inpPass').value;
+  if (!u || !p) return alert('Isi username & password');
+  const r = await api('/login', { username: u, password: p });
+  if (r.success) {
+    currentUser = r.user;
+    localStorage.setItem('arisan_token', r.token);
+    showApp();
+    await loadMasterData();
+    if (currentUser.isAdmin) showAdminButton();
+  } else alert(r.message || 'Login gagal');
+});
+
+btnLogout.addEventListener('click', async () => {
+  localStorage.removeItem('arisan_token');
+  currentUser = null;
+  showLogin();
+});
+
+function showLogin(){
+  loginCard.classList.remove('hidden');
+  app.classList.add('hidden');
+  userInfo.classList.add('hidden');
+}
+function showApp(){
+  loginCard.classList.add('hidden');
+  app.classList.remove('hidden');
+  userInfo.classList.remove('hidden');
+  userName.textContent = currentUser.username + (currentUser.isAdmin ? ' (Admin)' : '');
+}
+
+// Menu click
+document.querySelectorAll('[data-menu]').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{
+    const menu = e.currentTarget.dataset.menu;
+    openMenu(menu);
+  });
+});
+
+function openMenu(name){
+  document.getElementById('pageInput').classList.add('hidden');
+  document.getElementById('pagePengeluaran').classList.add('hidden');
+  document.getElementById('pageLaporan').classList.add('hidden');
+  document.getElementById('reportArea').innerHTML = '';
+  if (name === 'input') document.getElementById('pageInput').classList.remove('hidden');
+  if (name === 'pengeluaran') document.getElementById('pagePengeluaran').classList.remove('hidden');
+  if (name === 'laporan') document.getElementById('pageLaporan').classList.remove('hidden');
+}
+
+// Back buttons
+document.getElementById('btnBackFromInput').addEventListener('click', ()=>{ document.getElementById('pageInput').classList.add('hidden'); });
+document.getElementById('btnBackFromPengeluaran').addEventListener('click', ()=>{ document.getElementById('pagePengeluaran').classList.add('hidden'); });
+document.getElementById('btnBackFromLaporan').addEventListener('click', ()=>{ document.getElementById('pageLaporan').classList.add('hidden'); });
+
+// Input formatting & save
+['inpJumlah','inpKasPenerima','inpKasPanitia','inpNominalPengeluaran'].forEach(id=>{
+  const el = document.getElementById(id);
+  el && el.addEventListener('blur', ()=>{ el.value = formatRupiah(el.value); });
+});
+
+// Save input
+document.getElementById('btnSaveInput').addEventListener('click', async ()=>{
+  if (!currentUser) return alert('Login dulu');
+  const data = {
+    penerima: document.getElementById('selPenerima').value,
+    bulan: document.getElementById('selBulan').value,
+    tahun: document.getElementById('selTahun').value,
+    penyetor: document.getElementById('selPenyetor').value,
+    jumlah: Number(String(document.getElementById('inpJumlah').value).replace(/\D/g,'')) || 0,
+    kasPenerima: Number(String(document.getElementById('inpKasPenerima').value).replace(/\D/g,'')) || 0,
+    kasPanitia: Number(String(document.getElementById('inpKasPanitia').value).replace(/\D/g,'')) || 0,
+    token: localStorage.getItem('arisan_token')
+  };
+  const res = await api('/saveInput', data);
+  if (res.success){
+    const msg = document.getElementById('saveMsgInput'); msg.classList.remove('hidden'); setTimeout(()=>msg.classList.add('hidden'),2000);
+  } else alert(res.message || 'Gagal simpan');
+});
+
+// Save pengeluaran
+document.getElementById('btnSavePengeluaran').addEventListener('click', async ()=>{
+  const data = {
+    tanggal: document.getElementById('inpTanggalPengeluaran').value,
+    ket: document.getElementById('inpKeteranganPengeluaran').value,
+    nominal: Number(String(document.getElementById('inpNominalPengeluaran').value).replace(/\D/g,'')) || 0,
+    token: localStorage.getItem('arisan_token')
+  };
+  const res = await api('/savePengeluaran', data);
+  if (res.success){ const msg = document.getElementById('saveMsgPengeluaran'); msg.classList.remove('hidden'); setTimeout(()=>msg.classList.add('hidden'),2000);} else alert(res.message||'Gagal simpan');
+});
+
+// Reports
+document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click', async e=>{
+  const r = e.currentTarget.dataset.report;
+  if (r==='arisan') await showReportArisan();
+  if (r==='kas') await showReportKas();
+  if (r==='pengeluaran') await showReportPengeluaran();
+}));
+
+async function showReportArisan(){
+  const html = document.getElementById('reportArea');
+  // allow user to filter by penerima
+  const masters = masterNames;
+  html.innerHTML = `
+    <div class="flex gap-3 mb-3">
+      <select id="r_penerima" class="p-2 border rounded">
+        <option value="">-- Pilih Penerima --</option>
+        ${masters.map(n=>`<option>${n}</option>`).join('')}
+      </select>
+      <button id="r_load" class="px-3 py-2 bg-teal-600 text-white rounded">Load</button>
+      <button id="r_print" class="px-3 py-2 bg-slate-200 rounded">Print / Save PDF</button>
+    </div>
+    <div id="r_table"></div>
+  `;
+  document.getElementById('r_load').addEventListener('click', async ()=>{
+    const penerima = document.getElementById('r_penerima').value;
+    const res = await api('/reportArisan', { penerima });
+    if (!res.success) return alert(res.message||'Gagal ambil data');
+    const rows = res.data;
+    let totalSetor=0, totalKas=0;
+    const rowsHtml = rows.map((row,i)=>{
+      totalSetor+=Number(row.jumlah||0); totalKas+=Number(row.kasPenerima||0);
+      return `<tr class="border-b"><td class="p-2">${i+1}</td><td class="p-2">${row.penyetor}</td><td class="p-2 text-right">${formatRupiah(row.jumlah)}</td><td class="p-2 text-right">${formatRupiah(row.kasPenerima)}</td><td class="p-2">${row.tanggal}</td></tr>`
+    }).join('');
+    document.getElementById('r_table').innerHTML = `
+      <table class="w-full border-collapse">
+        <thead class="bg-slate-100"><tr><th class="p-2">#</th><th class="p-2">Penyetor</th><th class="p-2">Jumlah Disetor</th><th class="p-2">Kas Untuk Penerima</th><th class="p-2">Tanggal Input</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div class="mt-3 text-right font-semibold">Total Jumlah Disetor: ${formatRupiah(totalSetor)} | Total Kas Penerima: ${formatRupiah(totalKas)} | Grand Total: ${formatRupiah(totalSetor + totalKas)}</div>
+    `;
+    document.getElementById('r_print').addEventListener('click', ()=> window.print());
+  });
+}
+
+async function showReportKas(){
+  const html = document.getElementById('reportArea');
+  html.innerHTML = `
+    <div class="flex gap-3 mb-3">
+      <select id="r2_penerima" class="p-2 border rounded"><option value="">-- Pilih Penerima --</option>${masterNames.map(n=>`<option>${n}</option>`).join('')}</select>
+      <button id="r2_load" class="px-3 py-2 bg-teal-600 text-white rounded">Load</button>
+      <button id="r2_print" class="px-3 py-2 bg-slate-200 rounded">Print / Save PDF</button>
+    </div>
+    <div id="r2_table"></div>
+  `;
+  document.getElementById('r2_load').addEventListener('click', async ()=>{
+    const penerima = document.getElementById('r2_penerima').value;
+    const res = await api('/reportKas', { penerima });
+    if (!res.success) return alert(res.message||'Gagal ambil');
+    const rows = res.data; let total=0;
+    const rowsHtml = rows.map((row,i)=>{ total+=Number(row.kasPanitia||0); return `<tr class="border-b"><td class="p-2">${i+1}</td><td class="p-2">${row.penerima}</td><td class="p-2">${row.bulan}</td><td class="p-2">${row.penyetor}</td><td class="p-2 text-right">${formatRupiah(row.kasPanitia)}</td><td class="p-2">${row.tanggal}</td></tr>`}).join('');
+    document.getElementById('r2_table').innerHTML = `<table class="w-full"><thead class="bg-slate-100"><tr><th class="p-2">#</th><th class="p-2">Penerima</th><th class="p-2">Bulan</th><th class="p-2">Penyetor</th><th class="p-2">Kas Panitia</th><th class="p-2">Tanggal</th></tr></thead><tbody>${rowsHtml}</tbody></table><div class="mt-3 text-right font-semibold">Total Kas Untuk Panitia: ${formatRupiah(total)}</div>`;
+    document.getElementById('r2_print').addEventListener('click', ()=> window.print());
+  });
+}
+
+async function showReportPengeluaran(){
+  const html = document.getElementById('reportArea');
+  html.innerHTML = `<div class="flex gap-3 mb-3"><button id="r3_load" class="px-3 py-2 bg-teal-600 text-white rounded">Load</button><button id="r3_print" class="px-3 py-2 bg-slate-200 rounded">Print / Save PDF</button></div><div id="r3_table"></div>`;
+  document.getElementById('r3_load').addEventListener('click', async ()=>{
+    const res = await api('/getPengeluaran'); if(!res.success) return alert(res.message||'Gagal');
+    let total=0; const rowsHtml = res.data.map((r,i)=>{ total+=Number(r.nominal||0); return `<tr class="border-b"><td class="p-2">${i+1}</td><td class="p-2">${r.tanggal}</td><td class="p-2">${r.keterangan}</td><td class="p-2 text-right">${formatRupiah(r.nominal)}</td></tr>`}).join('');
+    document.getElementById('r3_table').innerHTML = `<table class="w-full"><thead class="bg-slate-100"><tr><th class="p-2">No</th><th class="p-2">Tanggal</th><th class="p-2">Keterangan</th><th class="p-2">Nominal</th></tr></thead><tbody>${rowsHtml}</tbody></table><div class="mt-3 text-right font-semibold">Total Pengeluaran: ${formatRupiah(total)}</div>`;
+    document.getElementById('r3_print').addEventListener('click', ()=> window.print());
+  });
+}
+
+// Load master data (names)
+async function loadMasterData(){
+  const res = await api('/masterNames');
+  if (res.success){ masterNames = res.data; const sel = document.getElementById('selPenerima'); const sel2 = document.getElementById('selPenyetor'); sel.innerHTML = masterNames.map(n=>`<option>${n}</option>`).join(''); sel2.innerHTML = sel.innerHTML;
+    // bulan dan tahun select
+    const now = new Date();
+    const bulanSel = document.getElementById('selBulan'); const tahunSel = document.getElementById('selTahun');
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    bulanSel.innerHTML = monthNames.map((m,i)=>`<option value="${i+1}" ${i===now.getMonth()? 'selected':''}>${m}</option>`).join('');
+    tahunSel.innerHTML = Array.from({length:6},(_,i)=>now.getFullYear()-2+i).map(y=>`<option ${y===now.getFullYear()?'selected':''}>${y}</option>`).join('');
+  } else alert('Gagal ambil master data');
+}
+
+// Admin UI show/hide
+function showAdminButton(){
+  const btn = document.createElement('button'); btn.textContent='Admin'; btn.className='px-3 py-2 bg-indigo-600 text-white rounded'; btn.addEventListener('click', openAdmin);
+  document.querySelector('header').appendChild(btn);
+}
+
+async function openAdmin(){
+  document.getElementById('adminPanel').classList.remove('hidden');
+  // load users
+  const res = await api('/getUsers');
+  if (res.success){ const ul = document.getElementById('userList'); ul.innerHTML = res.users.map(u=>`<div class="p-2 border rounded flex items-center justify-between"><div><b>${u.username}</b> ${u.isAdmin?'<span class="text-xs text-blue-600">(Admin)</span>':''}<div class="text-xs">Perm: open:${u.perm_open?1:0} ins:${u.perm_insert?1:0} upd:${u.perm_update?1:0} del:${u.perm_delete?1:0}</div></div><div><button class="btnDel text-sm text-red-600" data-user="${u.username}">Hapus</button></div></div>`).join('');
+    document.querySelectorAll('.btnDel').forEach(b=>b.addEventListener('click', async (ev)=>{ if(!confirm('Hapus user?'))return; const user=ev.currentTarget.dataset.user; const r=await api('/deleteUser',{username:user}); if(r.success) openAdmin(); else alert(r.message||'Gagal'); }));
+  }
+}
+
+document.getElementById('admClose').addEventListener('click', ()=>document.getElementById('adminPanel').classList.add('hidden'));
+document.getElementById('admSave').addEventListener('click', async ()=>{
+  const u=document.getElementById('adm_username').value.trim(); const p=document.getElementById('adm_password').value;
+  if(!u||!p) return alert('Isi username & password');
+  const payload = { username: u, password: p, isAdmin: true, perm_open: document.getElementById('perm_open').checked, perm_insert: document.getElementById('perm_insert').checked, perm_update: document.getElementById('perm_update').checked, perm_delete: document.getElementById('perm_delete').checked, token: localStorage.getItem('arisan_token') };
+  const r = await api('/saveUser', payload);
+  if (r.success) { openAdmin(); document.getElementById('adm_username').value=''; document.getElementById('adm_password').value=''; }
+  else alert(r.message||'Gagal simpan');
+});
+
+// On load, try restore session
+(async function(){
+  const tok = localStorage.getItem('arisan_token');
+  if (tok){ const r = await api('/whoami',{ token: tok }); if (r.success){ currentUser=r.user; showApp(); await loadMasterData(); if (currentUser.isAdmin) showAdminButton(); } else showLogin(); } else showLogin();
+})();
+
+</script>
+
+<!--
+---------------------------
+Google Apps Script (Code.gs)
+---------------------------
+Simpan kode bawah ini di project Google Apps Script. Ganti SPREADSHEET_ID.
+Deploy -> New deployment -> Web app -> Access: Anyone
+
+Sheets expected:
+- MasterData (kolom A: Nama)
+- DataInput (kolom: Penerima,Bulan,Tahun,Penyetor,Jumlah,KasPenerima,KasPanitia,TanggalInput)
+- Pengeluaran (kolom: Tanggal,Keterangan,Nominal)
+- Users (kolom: Username,Password,IsAdmin,perm_open,perm_insert,perm_update,perm_delete,Token,TokenExpiry)
+
+-->
+
+<!--
+GAS CODE START
+-->
+
+<script type="text/plain" id="gas-code">
+// Code.gs for Google Apps Script
+const SPREADSHEET_ID = 'https://docs.google.com/spreadsheets/d/1ByjrGM2wHyrTkyLnkef4SUndYnB8gOCtFzffw2bxAFY/edit?usp=drive_link'; // <-- ganti
+
+function _corsHeaders(){
+  return { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
+}
+
+function doOptions(e){
+  return ContentService.createTextOutput(JSON.stringify({})).setMimeType(ContentService.MimeType.JSON).setHeaders(_corsHeaders());
+}
+
+function doGet(e){
+  const path = e.pathInfo ? '/' + e.pathInfo : '';
+  const q = e.parameter || {};
+  try{
+    if (path === '/masterNames') return _json(_getMasterNames());
+    if (path === '/getPengeluaran') return _json({ success: true, data: _getSheetData('Pengeluaran') });
+    return _json({ success: false, message: 'Unknown GET ' + path });
+  } catch(err){ return _json({ success:false, message: err.message }); }
+}
+
+function doPost(e){
+  const path = e.pathInfo ? '/' + e.pathInfo : '';
+  const body = e.postData && e.postData.contents ? JSON.parse(e.postData.contents) : {};
+  try{
+    if (path === '/login') return _json(_login(body));
+    if (path === '/whoami') return _json(_whoami(body));
+    if (path === '/saveInput') return _json(_saveInput(body));
+    if (path === '/savePengeluaran') return _json(_savePengeluaran(body));
+    if (path === '/masterNames') return _json(_getMasterNames());
+    if (path === '/reportArisan') return _json(_reportArisan(body));
+    if (path === '/reportKas') return _json(_reportKas(body));
+    if (path === '/saveUser') return _json(_saveUser(body));
+    if (path === '/getUsers') return _json(_getUsers(body));
+    if (path === '/deleteUser') return _json(_deleteUser(body));
+    return _json({ success:false, message: 'Unknown POST ' + path });
+  } catch(err){ return _json({ success:false, message: err.message }); }
+}
+
+// Helpers
+function _json(obj){ return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON).setHeaders(_corsHeaders()); }
+
+function _getSheetData(name){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName(name); if (!sh) return [];
+  const vals = sh.getDataRange().getValues(); const keys = vals.shift();
+  return vals.map(r=>{
+    const row = {}; keys.forEach((k,i)=>row[k]=r[i]); return row;
+  });
+}
+
+function _getMasterNames(){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('MasterData'); if (!sh) return { success:false, message:'Sheet MasterData tidak ditemukan' };
+  const vals = sh.getRange(2,1,sh.getLastRow()-1,1).getValues().flat().filter(Boolean);
+  return { success:true, data: vals };
+}
+
+// Simple user management (passwords stored plaintext -> for demo only)
+function _getUsers(){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Users'); if (!sh) return { success:true, users: [] };
+  const vals = sh.getDataRange().getValues(); const keys = vals.shift();
+  const users = vals.map(r=>{ const u={}; keys.forEach((k,i)=>u[k]=r[i]); u.isAdmin = u.IsAdmin === true || u.IsAdmin === 'TRUE' || u.IsAdmin === 'true' || u.IsAdmin===1; u.perm_open = !!u.perm_open; u.perm_insert=!!u.perm_insert; u.perm_update=!!u.perm_update; u.perm_delete=!!u.perm_delete; return u; });
+  return { success:true, users };
+}
+
+function _saveUser(payload){
+  const auth = _whoami({ token: payload.token }); if (!auth.success || !auth.user.isAdmin) return { success:false, message:'Hanya admin' };
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID); let sh = ss.getSheetByName('Users'); if (!sh) sh = ss.insertSheet('Users');
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
+  if (headers.length===0) { sh.getRange(1,1,1,9).setValues([['Username','Password','IsAdmin','perm_open','perm_insert','perm_update','perm_delete','Token','TokenExpiry']]); }
+  // append
+  sh.appendRow([payload.username,payload.password, payload.isAdmin?'TRUE':'FALSE', payload.perm_open?'TRUE':'FALSE', payload.perm_insert?'TRUE':'FALSE', payload.perm_update?'TRUE':'FALSE', payload.perm_delete?'TRUE':'FALSE', '', '']);
+  return { success:true };
+}
+
+function _deleteUser(payload){
+  const auth = _whoami({ token: payload.token }); if (!auth.success || !auth.user.isAdmin) return { success:false, message:'Hanya admin' };
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const sh = ss.getSheetByName('Users'); if (!sh) return { success:false, message:'No users' };
+  const vals = sh.getDataRange().getValues(); const headers = vals.shift(); const usernameIndex = headers.indexOf('Username');
+  for (let i=0;i<vals.length;i++){ if (String(vals[i][usernameIndex])===String(payload.username)){ sh.deleteRow(i+2); return { success:true }; } }
+  return { success:false, message:'User tidak ditemukan' };
+}
+
+function _login(body){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const sh = ss.getSheetByName('Users'); if (!sh) return { success:false, message:'No users' };
+  const vals = sh.getDataRange().getValues(); const headers = vals.shift(); const usernameIndex = headers.indexOf('Username'); const passwordIndex = headers.indexOf('Password');
+  for (let i=0;i<vals.length;i++){ const row = vals[i]; if (String(row[usernameIndex])===String(body.username) && String(row[passwordIndex])===String(body.password)){
+      // create token and save
+      const token = Utilities.getUuid(); const expiry = new Date(Date.now() + 1000*60*60*24).toISOString();
+      sh.getRange(i+2, headers.indexOf('Token')+1).setValue(token); sh.getRange(i+2, headers.indexOf('TokenExpiry')+1).setValue(expiry);
+      return { success:true, user: { username: row[usernameIndex], isAdmin: row[headers.indexOf('IsAdmin')] === true || String(row[headers.indexOf('IsAdmin')]).toLowerCase()==='true' }, token };
+  } }
+  return { success:false, message:'Invalid credentials' };
+}
+
+function _whoami(body){
+  const token = body.token; if (!token) return { success:false, message:'No token' };
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const sh = ss.getSheetByName('Users'); if (!sh) return { success:false, message:'No users' };
+  const vals = sh.getDataRange().getValues(); const headers = vals.shift(); const tokenIndex = headers.indexOf('Token');
+  for (let i=0;i<vals.length;i++){ const row=vals[i]; if (String(row[tokenIndex])===String(token)){ return { success:true, user: { username: row[headers.indexOf('Username')], isAdmin: String(row[headers.indexOf('IsAdmin')]).toLowerCase()==='true', perm_open: row[headers.indexOf('perm_open')], perm_insert: row[headers.indexOf('perm_insert')], perm_update: row[headers.indexOf('perm_update')], perm_delete: row[headers.indexOf('perm_delete')] } } } }
+  return { success:false, message:'Token invalid' };
+}
+
+function _saveInput(body){
+  const who = _whoami({ token: body.token }); if (!who.success) return { success:false, message:'Not authenticated' };
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('DataInput'); if (!sh) sh = ss.insertSheet('DataInput');
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
+  if (!headers || headers.length===0) sh.getRange(1,1,1,8).setValues([['Penerima','Bulan','Tahun','Penyetor','Jumlah','KasPenerima','KasPanitia','TanggalInput']]);
+  const tanggal = new Date().toLocaleString();
+  sh.appendRow([body.penerima, body.bulan, body.tahun, body.penyetor, body.jumlah, body.kasPenerima, body.kasPanitia, tanggal]);
+  return { success:true };
+}
+
+function _savePengeluaran(body){
+  const who = _whoami({ token: body.token }); if (!who.success) return { success:false, message:'Not authenticated' };
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('Pengeluaran'); if (!sh) sh = ss.insertSheet('Pengeluaran');
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
+  if (!headers || headers.length===0) sh.getRange(1,1,1,3).setValues([['Tanggal','Keterangan','Nominal']]);
+  sh.appendRow([body.tanggal, body.ket, body.nominal]);
+  return { success:true };
+}
+
+function _reportArisan(body){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('DataInput'); if (!sh) return { success:true, data: [] };
+  const vals = sh.getDataRange().getValues(); const headers = vals.shift(); const data = vals.map(r=>{ const o={}; headers.forEach((h,i)=>o[h]=r[i]); return o; });
+  const filtered = body.penerima ? data.filter(d=>d.Penerima==body.penerima) : data;
+  // map to normalized
+  const mapped = filtered.map(r=>({ penyetor: r.Penyetor, jumlah: Number(r.Jumlah)||0, kasPenerima: Number(r.KasPenerima)||0, kasPanitia: Number(r.KasPanitia)||0, tanggal: r.TanggalInput || '' }));
+  return { success:true, data: mapped };
+}
+
+function _reportKas(body){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('DataInput'); if (!sh) return { success:true, data: [] };
+  const vals = sh.getDataRange().getValues(); const headers = vals.shift(); const data = vals.map(r=>{ const o={}; headers.forEach((h,i)=>o[h]=r[i]); return o; });
+  const filtered = body.penerima ? data.filter(d=>d.Penerima==body.penerima) : data;
+  const mapped = filtered.map(r=>({ penerima: r.Penerima, bulan: r.Bulan, penyetor: r.Penyetor, kasPanitia: Number(r.KasPanitia)||0, tanggal: r.TanggalInput || '' }));
+  return { success:true, data: mapped };
+}
+
+</script>
+
+<!--
+README & Deployment Steps (ringkas)
+1) Buat Google Spreadsheet baru. Buat sheet: MasterData, DataInput, Pengeluaran, Users.
+   - Isi MasterData kolom A mulai row2 dengan daftar nama.
+   - Isi Users row1 headers: Username,Password,IsAdmin,perm_open,perm_insert,perm_update,perm_delete,Token,TokenExpiry
+   - Tambahkan satu admin (baris baru) misal: admin | admin123 | TRUE | TRUE | TRUE | TRUE | TRUE
+2) Buat Google Apps Script project (script.google.com) -> paste Code.gs (kode di atas), ganti SPREADSHEET_ID
+3) Deploy -> New deployment -> Type: Web app -> Execute as: Me, Who has access: Anyone (jika ingin dapat diakses oleh GitHub Pages)
+   -> Copy Web app URL -> GANTI nilai GAS_WEB_APP di index.html
+4) Push index.html ke GitHub repo -> Settings -> Pages -> publish from branch main (atau gunakan GitHub Pages) -> buka URL GitHub Pages
+5) Sekarang frontend akan memanggil GAS web app untuk menyimpan / membaca data di spreadsheet
+
+NOTE KEAMANAN:
+- Implementasi ini menyimpan password dalam bentuk teks pada sheet Users. Untuk produksi, gunakan solusi autentikasi yang lebih aman (Firebase Auth / OAuth2) atau setidaknya hash password.
+- Jika sheets bersifat sensitif, jangan set public akses tanpa kontrol.
+
+-->
+
+</body>
+</html>
